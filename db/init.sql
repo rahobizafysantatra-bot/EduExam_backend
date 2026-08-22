@@ -71,3 +71,14 @@ CREATE TABLE answer (
         REFERENCES choice(id) ON DELETE RESTRICT,
     CONSTRAINT uq_attempt_question UNIQUE (attempt_id, question_id)
 );
+
+INSERT INTO "user" (id, first_name, last_name, email, password_hash, role, is_active)
+VALUES (
+    'admin-001',
+    'Admin',
+    'Master',
+    'admin@example.com',
+    '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG',
+    'ADMIN',
+    TRUE
+);
