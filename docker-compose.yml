@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:16
+    container_name: eduexam-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: eduexam
+      POSTGRES_PASSWORD: eduexam
+      POSTGRES_DB: eduexam
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  db_data:
