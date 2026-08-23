@@ -6,7 +6,10 @@ export interface Attempt {
   score: number;
 }
 
-export type AttemptSummaryDTO = Pick<Attempt, 'id' | 'examId' | 'submittedAt' | 'score'>;
+export type AttemptSummaryDTO = Pick<Attempt, 'id' | 'examId' | 'submittedAt' | 'score'> & {
+  examTitle: string;
+  courseCode: string;
+};
 
 export interface ExamResultRowDTO {
   studentId: string;

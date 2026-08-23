@@ -18,6 +18,8 @@ export interface CreateStudentDTO {
   password: string;
 }
 
-export type UpdateStudentDTO = Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>;
+export type UpdateStudentDTO = Partial<Pick<User, 'firstName' | 'lastName' | 'email'>> & {
+  password?: string;
+};
 
 export type UserDTO = Omit<User, 'passwordHash' | 'createdAt'>;

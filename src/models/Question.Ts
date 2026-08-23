@@ -11,7 +11,10 @@ export type CreateQuestionDTO = Omit<Question, 'id' | 'examId'> & {
   choices: CreateChoiceDTO[];
 };
 
-export type UpdateQuestionDTO = Partial<Omit<Question, 'id' | 'examId'>>;
+
+export type UpdateQuestionDTO = Omit<Question, 'id' | 'examId'> & {
+  choices: CreateChoiceDTO[];
+};
 
 export interface QuestionWithChoices extends Question {
   choices: Choice[];
