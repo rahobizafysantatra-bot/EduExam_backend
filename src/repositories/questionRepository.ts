@@ -51,7 +51,6 @@ export async function findById(questionId: string): Promise<QuestionWithChoices 
   return { ...question, choices: choicesResult.rows.map(mapChoiceRow) };
 }
 
-// RG-08 : nombre de tentatives sur l'examen parent d'une question donnée
 export async function countAttemptsForExam(examId: string): Promise<number> {
   const result = await pool.query('SELECT COUNT(*) FROM attempt WHERE exam_id = $1', [examId]);
   return Number(result.rows[0].count);
@@ -103,7 +102,6 @@ export async function update(questionId: string, examId: string, dto: UpdateQues
       [dto.statement, dto.points, questionId]
     );
 
-    // remplacement complet des choix
     await client.query('DELETE FROM choice WHERE question_id = $1', [questionId]);
 
     const choices: Choice[] = [];
@@ -127,6 +125,5 @@ export async function update(questionId: string, examId: string, dto: UpdateQues
 }
 
 export async function deleteQuestion(questionId: string): Promise<void> {
-  // ON DELETE CASCADE sur choice s'occupe des choix associés
   await pool.query('DELETE FROM question WHERE id = $1', [questionId]);
 }
