@@ -28,15 +28,11 @@ export class ExamRepository {
     return result.rows.map(mapRowToExam);
   }
 
+
   private async generateNextExamId(): Promise<string> {
-    const result = await pool.query(
-      `SELECT MAX(CAST(id AS INTEGER)) AS max_id FROM exam`
-    );
-
-    const maxId = result.rows[0].max_id;
-    const nextNumber = maxId ? maxId + 1 : 1;
-
-    return nextNumber.toString();
+    const result = await pool.query("SELECT nextval('exam_id_seq') AS n");
+    const sequence = String(result.rows[0].n).padStart(4, '0');
+    return `EX${sequence}`;
   }
 
   async create(exam: CreateExamDTO): Promise<Exam> {
