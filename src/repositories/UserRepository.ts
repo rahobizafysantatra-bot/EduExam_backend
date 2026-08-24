@@ -33,27 +33,15 @@ export class UserRepository {
     return result.rows.map(mapRowToUser);
   }
 
-  private async generateNextStudentId(): Promise<string> {
-    const year = new Date().getFullYear().toString().slice(-2);
-    const prefix = `STD${year}`;
+private async generateNextStudentId(): Promise<string> {
+  const year = new Date().getFullYear().toString().slice(-2);
+  const prefix = `STD${year}`;
 
-    const result = await pool.query(
-      `SELECT id FROM "user" WHERE id LIKE $1 ORDER BY id DESC LIMIT 1`,
-      [`${prefix}%`]
-    );
+  const result = await pool.query("SELECT nextval('student_id_seq') AS n");
+  const sequence = String(result.rows[0].n).padStart(3, '0');
 
-    let nextNumber = 1;
-    if (result.rows[0]) {
-      const lastId = result.rows[0].id as string;
-      const lastNumber = parseInt(lastId.slice(prefix.length), 10);
-      if (!isNaN(lastNumber)) {
-        nextNumber = lastNumber + 1;
-      }
-    }
-
-    const sequence = nextNumber.toString().padStart(3, '0');
-    return `${prefix}${sequence}`;
-  }
+  return `${prefix}${sequence}`;
+}
 
   async create(user: {
     firstName: string;
