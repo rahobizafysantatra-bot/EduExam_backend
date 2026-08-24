@@ -82,3 +82,7 @@ VALUES (
     'ADMIN',
     TRUE
 );
+
+CREATE SEQUENCE student_id_seq START 1;
+CREATE SEQUENCE course_id_seq START 1;
+CREATE SEQUENCE exam_id_seq START 1;
