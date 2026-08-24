@@ -22,14 +22,9 @@ export class CourseRepository {
   }
 
   private async generateNextCourseId(): Promise<string> {
-    const result = await pool.query(
-      `SELECT MAX(CAST(id AS INTEGER)) AS max_id FROM course`
-    );
-
-    const maxId = result.rows[0].max_id;
-    const nextNumber = maxId ? maxId + 1 : 1;
-
-    return nextNumber.toString();
+    const result = await pool.query("SELECT nextval('course_id_seq') AS n");
+    const sequence = String(result.rows[0].n).padStart(4, '0');
+    return `CS${sequence}`;
   }
 
   async create(course: CreateCourseDTO): Promise<Course> {
