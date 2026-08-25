@@ -1,5 +1,6 @@
-import { CourseRepository } from '../repositories/CourseRepository';
+import { CourseRepository } from '../repositories/courseRepository';
 import { CreateCourseDTO, UpdateCourseDTO, Course } from '../models/Course';
+import { HttpError } from '../security/HttpError';
 
 export class CourseService {
   constructor(private courseRepository: CourseRepository) {}
@@ -11,9 +12,7 @@ export class CourseService {
   async getCourse(id: string): Promise<Course> {
     const course = await this.courseRepository.findById(id);
     if (!course) {
-      const err: any = new Error('Course not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Course not found');
     }
     return course;
   }
@@ -25,9 +24,7 @@ export class CourseService {
   async updateCourse(id: string, dto: UpdateCourseDTO): Promise<Course> {
     const updated = await this.courseRepository.update(id, dto);
     if (!updated) {
-      const err: any = new Error('Course not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Course not found');
     }
     return updated;
   }
@@ -35,16 +32,12 @@ export class CourseService {
   async deleteCourse(id: string): Promise<void> {
     const existing = await this.courseRepository.findById(id);
     if (!existing) {
-      const err: any = new Error('Course not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Course not found');
     }
 
     const hasExams = await this.courseRepository.hasExams(id);
     if (hasExams) {
-      const err: any = new Error('Cannot delete course with associated exams');
-      err.status = 409;
-      throw err;
+      throw new HttpError( 409,'Cannot delete course with associated exams');
     }
 
     await this.courseRepository.delete(id);

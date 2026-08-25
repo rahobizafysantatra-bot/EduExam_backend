@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
-import { UserRepository } from '../repositories/UserRepository';
+import { UserRepository } from '../repositories/userRepository';
 import { CreateStudentDTO, UpdateStudentDTO, UserDTO, User } from '../models/User';
+import { HttpError } from '../security/HttpError';
 
 const SALT_ROUNDS = 10;
 
@@ -26,9 +27,7 @@ export class UserService {
   async createStudent(dto: CreateStudentDTO): Promise<UserDTO> {
     const existing = await this.userRepository.findByEmail(dto.email);
     if (existing) {
-      const err: any = new Error('Account with this email already exists');
-      err.status = 409;
-      throw err;
+      throw new HttpError( 409,'Account with this email already exists');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
@@ -52,9 +51,7 @@ export class UserService {
 
     const updated = await this.userRepository.update(id, dto);
     if (!updated) {
-      const err: any = new Error('Student not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Student not found');
     }
     return toDTO(updated);
   }
@@ -62,9 +59,7 @@ export class UserService {
   async resetPassword(id: string, newPassword: string): Promise<void> {
     const existing = await this.userRepository.findById(id);
     if (!existing || existing.role !== 'STUDENT') {
-      const err: any = new Error('Student not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Student not found');
     }
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
     await this.userRepository.updatePasswordHash(id, passwordHash);
@@ -73,9 +68,7 @@ export class UserService {
   async deactivateStudent(id: string): Promise<void> {
     const existing = await this.userRepository.findById(id);
     if (!existing || existing.role !== 'STUDENT') {
-      const err: any = new Error('Student not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Student not found');
     }
     await this.userRepository.deactivate(id);
   }

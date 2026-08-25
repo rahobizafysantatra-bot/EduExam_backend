@@ -1,6 +1,7 @@
-import { ExamRepository } from '../repositories/ExamRepository';
-import { CourseRepository } from '../repositories/CourseRepository';
+import { ExamRepository } from '../repositories/examRepository';
+import { CourseRepository } from '../repositories/courseRepository';
 import { CreateExamDTO, UpdateExamDTO, Exam } from '../models/Exam';
+import { HttpError } from '../security/HttpError';
 
 export class ExamService {
   constructor(
@@ -15,25 +16,19 @@ export class ExamService {
   async getExam(id: string): Promise<Exam> {
     const exam = await this.examRepository.findById(id);
     if (!exam) {
-      const err: any = new Error('Exam not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Exam not found');
     }
     return exam;
   }
 
   async createExam(dto: CreateExamDTO): Promise<Exam> {
     if (new Date(dto.startDate) >= new Date(dto.endDate)) {
-      const err: any = new Error('Start date must be before end date');
-      err.status = 400;
-      throw err;
+      throw new HttpError( 400,'Start date must be before end date');
     }
 
     const course = await this.courseRepository.findById(dto.courseId);
     if (!course) {
-      const err: any = new Error('Course not found');
-      err.status = 400;
-      throw err;
+      throw new HttpError( 404,'Course not found');
     }
 
     return this.examRepository.create(dto);
@@ -42,31 +37,23 @@ export class ExamService {
   async updateExam(id: string, dto: UpdateExamDTO): Promise<Exam> {
     const existing = await this.examRepository.findById(id);
     if (!existing) {
-      const err: any = new Error('Exam not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Exam not found');
     }
 
     const hasAttempts = await this.examRepository.hasAttempts(id);
     if (hasAttempts && (dto.startDate || dto.endDate)) {
-      const err: any = new Error('Cannot modify the dates of an exam that has attempts');
-      err.status = 409;
-      throw err;
+      throw new HttpError( 409,'Cannot modify the dates of an exam that has attempts');
     }
 
     const start = dto.startDate ? new Date(dto.startDate) : existing.startDate;
     const end = dto.endDate ? new Date(dto.endDate) : existing.endDate;
     if (start >= end) {
-      const err: any = new Error('Start date must be before end date');
-      err.status = 400;
-      throw err;
+      throw new HttpError( 400,'Start date must be before end date');
     }
 
     const updated = await this.examRepository.update(id, dto);
     if (!updated) {
-      const err: any = new Error('Exam not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Exam not found');
     }
     return updated;
   }
@@ -74,16 +61,12 @@ export class ExamService {
   async deleteExam(id: string): Promise<void> {
     const existing = await this.examRepository.findById(id);
     if (!existing) {
-      const err: any = new Error('Exam not found');
-      err.status = 404;
-      throw err;
+      throw new HttpError( 404,'Exam not found');
     }
 
     const hasAttempts = await this.examRepository.hasAttempts(id);
     if (hasAttempts) {
-      const err: any = new Error('Cannot delete an exam that has attempts');
-      err.status = 409;
-      throw err;
+      throw new HttpError( 409,'Cannot delete an exam that has attempts');
     }
 
     await this.examRepository.delete(id);
