@@ -5,7 +5,6 @@ export interface AuthUser {
   role: 'ADMIN' | 'STUDENT';
 }
 
-// req.user is set by authMiddleware after the JWT has been decoded
 export interface AuthRequest extends Request {
   user?: AuthUser;
 }
