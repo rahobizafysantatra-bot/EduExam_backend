@@ -3,7 +3,7 @@ import { AuthRequest } from './types';
 import { verifyToken } from './jwt';
 import { HttpError } from './HttpError';
 
-export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,4 +18,4 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   } catch (err) {
     next(new HttpError(401, 'Invalid or expired token'));
   }
-}
+};

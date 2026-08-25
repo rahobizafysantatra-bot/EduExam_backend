@@ -1,14 +1,14 @@
 import { pool } from '../config/db';
 import { Course, CreateCourseDTO } from '../models/Course';
 
-function mapRowToCourse(row: any): Course {
+const mapRowToCourse = (row: any): Course => {
   return {
     id: row.id,
     code: row.code,
     name: row.name,
     description: row.description,
   };
-}
+};
 
 export class CourseRepository {
   async findAll(): Promise<Course[]> {
@@ -29,16 +29,21 @@ export class CourseRepository {
 
   async create(course: CreateCourseDTO): Promise<Course> {
     const id = await this.generateNextCourseId();
+
     const result = await pool.query(
       `INSERT INTO course (id, code, name, description)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
       [id, course.code, course.name, course.description]
     );
+
     return mapRowToCourse(result.rows[0]);
   }
 
-  async update(id: string, fields: Partial<Pick<Course, 'code' | 'name' | 'description'>>): Promise<Course | null> {
+  async update(
+    id: string,
+    fields: Partial<Pick<Course, 'code' | 'name' | 'description'>>
+  ): Promise<Course | null> {
     const setClauses: string[] = [];
     const values: any[] = [];
     let i = 1;
@@ -47,10 +52,12 @@ export class CourseRepository {
       setClauses.push(`code = $${i++}`);
       values.push(fields.code);
     }
+
     if (fields.name !== undefined) {
       setClauses.push(`name = $${i++}`);
       values.push(fields.name);
     }
+
     if (fields.description !== undefined) {
       setClauses.push(`description = $${i++}`);
       values.push(fields.description);
@@ -61,10 +68,12 @@ export class CourseRepository {
     }
 
     values.push(id);
+
     const result = await pool.query(
       `UPDATE course SET ${setClauses.join(', ')} WHERE id = $${i} RETURNING *`,
       values
     );
+
     return result.rows[0] ? mapRowToCourse(result.rows[0]) : null;
   }
 
@@ -73,7 +82,11 @@ export class CourseRepository {
   }
 
   async hasExams(courseId: string): Promise<boolean> {
-    const result = await pool.query('SELECT 1 FROM exam WHERE course_id = $1 LIMIT 1', [courseId]);
+    const result = await pool.query(
+      'SELECT 1 FROM exam WHERE course_id = $1 LIMIT 1',
+      [courseId]
+    );
+
     return (result.rowCount ?? 0) > 0;
   }
 }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { CourseController } from '../controllers/courseController';
-import { CourseService } from '../services/CourseService';
+import { CourseService } from '../services/courseService';
 import { CourseRepository } from '../repositories/courseRepository';
 import { requireRole } from '../security/requireRole';
 import { authMiddleware } from '../security/authMiddleware';

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ExamController } from '../controllers/examController';
-import { ExamService } from '../services/ExamService';
+import { ExamService } from '../services/examService';
 import { ExamRepository } from '../repositories/examRepository';
 import { CourseRepository } from '../repositories/courseRepository';
 import { authMiddleware } from '../security/authMiddleware';
