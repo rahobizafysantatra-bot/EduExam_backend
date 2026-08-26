@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "dev": "ts-node-dev --respawn src/server.ts",
-  "build": "tsc",
-  "start": "node dist/server.js"
-   },
+    "dev": "ts-node-dev --respawn src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
   "keywords": [],
   "type": "commonjs",
   "dependencies": {
@@ -26,6 +26,6 @@
     "@types/node": "^26.2.0",
     "@types/pg": "^8.23.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^7.0.2"
+    "typescript": "^5.6.3"
   }
 }
