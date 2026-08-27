@@ -79,12 +79,8 @@ CREATE TABLE answer (
     CONSTRAINT uq_attempt_question UNIQUE (attempt_id, question_id)
 );
 
-INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES
-('STD25001', 'Alice', 'Alice Martin', 'alice.martin@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25002', 'Bob', 'Bob Durand', 'bob.durand@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25003', 'Chloe', 'Chloe Bernard', 'chloe.bernard@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25004', 'David', 'David Nguyen', 'david.nguyen@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE);
-
+INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active)
+VALUES ('admin-001', 'Admin', 'Administrateur', 'admin@example.com', '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG', 'ADMIN', TRUE);
 
 CREATE SEQUENCE student_id_seq START 1;
 CREATE SEQUENCE course_id_seq START 1;
