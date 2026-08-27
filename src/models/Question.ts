@@ -5,21 +5,31 @@ export interface Question {
   examId: string;
   statement: string;
   points: number;
+  position: number;
 }
 
-export type CreateQuestionDTO = Omit<Question, 'id' | 'examId'> & {
+export interface CreateQuestionDTO {
+  statement: string;
+  points?: number;
+  position?: number;
   choices: CreateChoiceDTO[];
-};
+}
 
-
-export type UpdateQuestionDTO = Omit<Question, 'id' | 'examId'> & {
+export interface UpdateQuestionDTO {
+  statement: string;
+  points?: number;
+  position?: number;
   choices: CreateChoiceDTO[];
-};
+}
 
 export interface QuestionWithChoices extends Question {
   choices: Choice[];
 }
 
-export interface QuestionForStudent extends Question {
+export interface QuestionForStudent {
+  id: string;
+  statement: string;
+  points: number;
+  position: number;
   choices: ChoiceForStudent[];
 }
