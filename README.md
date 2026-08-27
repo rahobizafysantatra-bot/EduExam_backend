@@ -43,6 +43,8 @@ Admin:
 - email: admin@example.com
 - password: admin1234
 
+Student:
+- password: password
 ## Project structure
 
 ```
