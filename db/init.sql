@@ -86,3 +86,103 @@ VALUES (
 CREATE SEQUENCE student_id_seq START 1;
 CREATE SEQUENCE course_id_seq START 1;
 CREATE SEQUENCE exam_id_seq START 1;
+
+
+INSERT INTO course (id, code, name, description) VALUES
+('CS0001', 'PROG1', 'Introduction to Algorithms', 'Algorithm basics using JavaScript'),
+('CS0002', 'PROG2', 'Object-Oriented Programming', 'OOP concepts using Java'),
+('CS0003', 'DONNEES1', 'Database Fundamentals', 'Basic database commands using PostgreSQL/SQL'),
+('CS0004', 'LV1', 'French Language', 'French as a foreign language');
+
+INSERT INTO "user" (id, first_name, last_name, email, password_hash, role, is_active) VALUES
+('STD25001', 'Alice', 'Martin', 'alice.martin@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
+('STD25002', 'Bob', 'Durand', 'bob.durand@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
+('STD25003', 'Chloe', 'Bernard', 'chloe.bernard@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
+('STD25004', 'David', 'Nguyen', 'david.nguyen@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE);
+
+INSERT INTO exam (id, course_id, title, description, start_date, end_date) VALUES
+('EX0001', 'CS0001', 'PROG1 Midterm - Algorithm Basics', 'Covers variables, complexity and arrays', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
+('EX0002', 'CS0002', 'PROG2 Midterm - Java OOP', 'Covers inheritance and polymorphism', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
+('EX0003', 'CS0003', 'DONNEES1 Midterm - SQL Basics', 'Covers SELECT, WHERE and parameterized queries', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
+('EX0004', 'CS0004', 'LV1 Midterm - French Basics', 'Covers vocabulary and grammar basics', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days');
+
+INSERT INTO question (id, exam_id, statement, points) VALUES
+('q-prog1-1', 'EX0001', 'Which JavaScript keyword declares a block-scoped variable?', 2),
+('q-prog1-2', 'EX0001', 'What is the time complexity of a binary search on a sorted array of n elements?', 3),
+('q-prog1-3', 'EX0001', 'Is an array in JavaScript zero-indexed?', 1),
+
+('q-prog2-1', 'EX0002', 'Which keyword is used to inherit a class in Java?', 2),
+('q-prog2-2', 'EX0002', 'Which OOP principle allows a subclass to override a method defined in its superclass?', 3),
+('q-prog2-3', 'EX0002', 'Can a Java class extend more than one class directly?', 1),
+
+('q-donnees1-1', 'EX0003', 'Which SQL command is used to retrieve data from a database?', 2),
+('q-donnees1-2', 'EX0003', 'Which clause is used to filter rows in SQL before grouping?', 3),
+('q-donnees1-3', 'EX0003', 'Does PostgreSQL support parameterized queries with $1, $2 syntax?', 1),
+
+('q-lv1-1', 'EX0004', 'Comment dit-on "hello" en francais ?', 2),
+('q-lv1-2', 'EX0004', 'Quel est le feminin de "acteur" ?', 3),
+('q-lv1-3', 'EX0004', 'Le mot "le" est-il un article defini masculin singulier ?', 1);
+
+INSERT INTO choice (id, question_id, text, is_correct) VALUES
+('c-prog1-1-a', 'q-prog1-1', 'var', FALSE),
+('c-prog1-1-b', 'q-prog1-1', 'let', TRUE),
+('c-prog1-1-c', 'q-prog1-1', 'function', FALSE),
+('c-prog1-1-d', 'q-prog1-1', 'class', FALSE),
+
+('c-prog1-2-a', 'q-prog1-2', 'O(n)', FALSE),
+('c-prog1-2-b', 'q-prog1-2', 'O(log n)', TRUE),
+('c-prog1-2-c', 'q-prog1-2', 'O(n^2)', FALSE),
+('c-prog1-2-d', 'q-prog1-2', 'O(1)', FALSE),
+
+('c-prog1-3-a', 'q-prog1-3', 'Yes', TRUE),
+('c-prog1-3-b', 'q-prog1-3', 'No', FALSE),
+
+('c-prog2-1-a', 'q-prog2-1', 'implements', FALSE),
+('c-prog2-1-b', 'q-prog2-1', 'extends', TRUE),
+('c-prog2-1-c', 'q-prog2-1', 'inherits', FALSE),
+('c-prog2-1-d', 'q-prog2-1', 'super', FALSE),
+
+('c-prog2-2-a', 'q-prog2-2', 'Encapsulation', FALSE),
+('c-prog2-2-b', 'q-prog2-2', 'Abstraction', FALSE),
+('c-prog2-2-c', 'q-prog2-2', 'Polymorphism', TRUE),
+('c-prog2-2-d', 'q-prog2-2', 'Inheritance', FALSE),
+
+('c-prog2-3-a', 'q-prog2-3', 'Yes', FALSE),
+('c-prog2-3-b', 'q-prog2-3', 'No', TRUE),
+
+('c-donnees1-1-a', 'q-donnees1-1', 'GET', FALSE),
+('c-donnees1-1-b', 'q-donnees1-1', 'SELECT', TRUE),
+('c-donnees1-1-c', 'q-donnees1-1', 'FETCH', FALSE),
+('c-donnees1-1-d', 'q-donnees1-1', 'PULL', FALSE),
+
+('c-donnees1-2-a', 'q-donnees1-2', 'HAVING', FALSE),
+('c-donnees1-2-b', 'q-donnees1-2', 'WHERE', TRUE),
+('c-donnees1-2-c', 'q-donnees1-2', 'GROUP BY', FALSE),
+('c-donnees1-2-d', 'q-donnees1-2', 'ORDER BY', FALSE),
+
+('c-donnees1-3-a', 'q-donnees1-3', 'Yes', TRUE),
+('c-donnees1-3-b', 'q-donnees1-3', 'No', FALSE),
+
+('c-lv1-1-a', 'q-lv1-1', 'Au revoir', FALSE),
+('c-lv1-1-b', 'q-lv1-1', 'Bonjour', TRUE),
+('c-lv1-1-c', 'q-lv1-1', 'Merci', FALSE),
+('c-lv1-1-d', 'q-lv1-1', 'S''il vous plait', FALSE),
+
+('c-lv1-2-a', 'q-lv1-2', 'Actrice', TRUE),
+('c-lv1-2-b', 'q-lv1-2', 'Acteure', FALSE),
+('c-lv1-2-c', 'q-lv1-2', 'Actorine', FALSE),
+('c-lv1-2-d', 'q-lv1-2', 'Actrisse', FALSE),
+
+('c-lv1-3-a', 'q-lv1-3', 'Oui', TRUE),
+('c-lv1-3-b', 'q-lv1-3', 'Non', FALSE);
+
+INSERT INTO attempt (id, exam_id, student_id, submitted_at, score) VALUES
+('attempt-std25001-ex0001', 'EX0001', 'STD25001', NOW() - INTERVAL '2 hours', 2);
+
+INSERT INTO answer (id, attempt_id, question_id, choice_id) VALUES
+('answer-1', 'attempt-std25001-ex0001', 'q-prog1-1', 'c-prog1-1-b'),
+('answer-2', 'attempt-std25001-ex0001', 'q-prog1-2', 'c-prog1-2-a');
+
+SELECT setval('course_id_seq', 4, true);
+SELECT setval('exam_id_seq', 4, true);
+SELECT setval('student_id_seq', 4, true);
