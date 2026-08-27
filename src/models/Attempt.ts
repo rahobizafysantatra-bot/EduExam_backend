@@ -9,6 +9,7 @@ export interface Attempt {
 export type AttemptSummaryDTO = Pick<Attempt, 'id' | 'examId' | 'submittedAt' | 'score'> & {
   examTitle: string;
   courseCode: string;
+  maxScore: number;
 };
 
 export interface ExamResultRowDTO {
