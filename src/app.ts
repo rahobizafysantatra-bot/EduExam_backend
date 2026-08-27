@@ -7,8 +7,19 @@ import examQuestionsRoutes from './routes/examQuestionsRoutes';
 import questionsRoutes from './routes/questionsRoutes';
 import myRoutes from './routes/myRoutes';
 import { errorHandler } from './security/errorHandler';
+import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
+
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+  })
+);
+
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
