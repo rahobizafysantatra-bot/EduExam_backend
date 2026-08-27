@@ -133,11 +133,15 @@ export const findByStudentId = async (
   studentId: string
 ): Promise<AttemptSummaryDTO[]> => {
   const result = await pool.query(
-    `SELECT a.id, a.exam_id, a.submitted_at, a.score, e.title AS exam_title, c.code AS course_code
+    `SELECT a.id, a.exam_id, a.submitted_at, a.score,
+            COALESCE(SUM(q.points), 0) AS max_score,
+            e.title AS exam_title, c.code AS course_code
      FROM attempt a
      JOIN exam e ON e.id = a.exam_id
      JOIN course c ON c.id = e.course_id
+     LEFT JOIN question q ON q.exam_id = e.id
      WHERE a.student_id = $1
+     GROUP BY a.id, a.exam_id, a.submitted_at, a.score, e.title, c.code
      ORDER BY a.submitted_at DESC`,
     [studentId]
   );
@@ -147,6 +151,7 @@ export const findByStudentId = async (
     examId: row.exam_id,
     submittedAt: row.submitted_at,
     score: Number(row.score),
+    maxScore: Number(row.max_score),
     examTitle: row.exam_title,
     courseCode: row.course_code,
   }));
