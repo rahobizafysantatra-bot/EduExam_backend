@@ -22,7 +22,7 @@ export const getMyExam = async (req: AuthRequest, res: Response, next: NextFunct
 
 export const submitExam = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const result = await AttemptService.submitExam(String(req.params.examId), req.user!.id, req.body);
+    const result = await AttemptService.submitExam(String(req.params.id), req.user!.id, req.body);
     res.status(201).json(result);
   } catch (error) {
     next(error);
@@ -40,7 +40,7 @@ export const myResults = async (req: AuthRequest, res: Response, next: NextFunct
 
 export const adminExamResults = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const results = await AttemptService.getExamResultsForAdmin(String(req.params.examId));
+    const results = await AttemptService.getExamResultsForAdmin(String(req.params.id));
     res.status(200).json(results);
   } catch (error) {
     next(error);

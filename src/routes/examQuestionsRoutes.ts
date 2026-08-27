@@ -6,8 +6,8 @@ import { requireRole } from '../security/requireRole';
 
 const router = Router();
 
-router.get('/exams/:examId/questions', authMiddleware, requireRole('ADMIN'), QuestionController.list);
-router.post('/exams/:examId/questions', authMiddleware, requireRole('ADMIN'), QuestionController.create);
-router.get('/exams/:examId/results', authMiddleware, requireRole('ADMIN'), AttemptController.adminExamResults);
+router.get('/exams/:id/questions', authMiddleware, requireRole('ADMIN'), QuestionController.list);
+router.post('/exams/:id/questions', authMiddleware, requireRole('ADMIN'), QuestionController.create);
+router.get('/exams/:id/results', authMiddleware, requireRole('ADMIN'), AttemptController.adminExamResults);
 
 export default router;
