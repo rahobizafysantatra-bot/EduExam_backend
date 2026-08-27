@@ -1,15 +1,16 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest, AuthUser } from './types';
-import { HttpError } from './HttpError';
+import { UnauthorizedError, ForbiddenError } from './errors';
 
 export const requireRole = (role: AuthUser['role']) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, _res: Response, next: NextFunction) => {
     if (!req.user) {
-      return next(new HttpError(401, 'Authentication required'));
+      return next(new UnauthorizedError('No token provided'));
     }
 
     if (req.user.role !== role) {
-      return next(new HttpError(403, 'Access denied for this role'));
+      const message = role === 'ADMIN' ? 'Admin access required' : 'Student access required';
+      return next(new ForbiddenError(message));
     }
 
     next();

@@ -1,919 +1,763 @@
 openapi: 3.0.3
-
 info:
-  title: Exam Hub API (EduExam)
-  description: |
-    API for the "Exam Hub" multiple-choice exam platform.
-    Roles:
-      - ADMIN: manages students, courses, exams, questions, and views results.
-      - STUDENT: takes available exams and views their results.
+  title: Exam Hub API
+  description: >
+    API du gestionnaire d'examens QCM Exam Hub. Deux rôles : administrateur
+    (gestion des étudiants, cours, examens, questions et résultats) et
+    étudiant (passage des examens, note calculée côté serveur).
+    Toute erreur renvoie un objet JSON `{ "message": "..." }`.
   version: 1.0.0
-
 servers:
-  - url: http://localhost:3000/api
-    description: Development
-
-security:
-  - bearerAuth: []
+  - url: http://localhost:3001/api
+    description: Serveur de développement
 
 tags:
-  - name: Authentication
+  - name: Auth
+    description: Connexion (publique)
   - name: Students
+    description: Gestion des étudiants (admin)
   - name: Courses
+    description: Gestion des cours (admin)
   - name: Exams
+    description: Gestion des examens et résultats (admin)
   - name: Questions
-  - name: Results
-  - name: MyExams
+    description: Questions et choix d'un examen (admin)
+  - name: My
+    description: Espace étudiant (examens disponibles, soumission, résultats)
 
 paths:
   /auth/login:
     post:
-      tags: [Authentication]
-      summary: Login (admin or student)
+      tags: [Auth]
+      summary: Connexion (admin ou étudiant)
       security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email, example: admin@examhub.local }
+                password: { type: string, example: admin123 }
       responses:
-        '200':
-          description: Login successful
+        "200":
+          description: Connexion réussie
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '401':
-          description: Invalid credentials or account disabled
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT valable 24 h contenant userId et role
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer, example: 1 }
+                      name: { type: string, example: Administrateur }
+                      role: { type: string, enum: [admin, student] }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401":
+          description: Identifiants invalides ("Invalid email or password") ou compte désactivé ("Account disabled")
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: { $ref: "#/components/schemas/Error" }
 
   /students:
     get:
       tags: [Students]
-      summary: List students
-      description: Admin only.
+      summary: Liste des étudiants
       responses:
-        '200':
-          description: List of students
+        "200":
+          description: Tous les étudiants (jamais l'admin, jamais le mot de passe)
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/Student'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
+                items: { $ref: "#/components/schemas/Student" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
     post:
       tags: [Students]
-      summary: Create a student account
-      description: Admin only.
+      summary: Créer un étudiant
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateStudentRequest'
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string, example: Jean Rakoto }
+                email: { type: string, format: email }
+                password: { type: string, description: Mot de passe initial (haché en bcrypt côté serveur) }
       responses:
-        '201':
-          description: Student created
+        "201":
+          description: Étudiant créé
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Student'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '409':
-          description: Email already in use
+              schema: { $ref: "#/components/schemas/Student" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "409":
+          description: Email déjà utilisé ("Email already in use")
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: { $ref: "#/components/schemas/Error" }
 
-  /students/{studentId}:
+  /students/{id}:
     parameters:
-      - $ref: '#/components/parameters/StudentId'
-
+      - $ref: "#/components/parameters/Id"
     put:
       tags: [Students]
-      summary: Update a student (name, email, reset password)
-      description: Admin only.
+      summary: Modifier un étudiant (password optionnel = réinitialisation)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateStudentRequest'
+              type: object
+              required: [name, email]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                is_active: { type: boolean }
+                password:
+                  type: string
+                  description: Si présent, réinitialise le mot de passe
       responses:
-        '200':
-          description: Student updated
+        "200":
+          description: Étudiant mis à jour
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Student'
-        '404': { $ref: '#/components/responses/NotFound' }
-
+              schema: { $ref: "#/components/schemas/Student" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Email déjà utilisé par un autre compte
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
     delete:
       tags: [Students]
-      summary: Deactivate a student
-      description: Admin only. Never physically deletes the record.
+      summary: Désactiver un étudiant (jamais de suppression physique, RG-10)
       responses:
-        '204':
-          description: Student deactivated
-        '404': { $ref: '#/components/responses/NotFound' }
+        "200":
+          description: Compte désactivé (is_active = false)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Student" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
 
   /courses:
     get:
       tags: [Courses]
-      summary: List courses
-      description: Admin only.
+      summary: Liste des cours
       responses:
-        '200':
-          description: List of courses
+        "200":
+          description: Cours avec leur nombre d'examens
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/Course'
-
+                items: { $ref: "#/components/schemas/Course" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
     post:
       tags: [Courses]
-      summary: Create a course
-      description: Admin only.
+      summary: Créer un cours
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateCourseRequest'
+              type: object
+              required: [code, name]
+              properties:
+                code: { type: string, example: PROG2 }
+                name: { type: string, example: Programmation web }
+                description: { type: string, nullable: true }
       responses:
-        '201':
-          description: Course created
+        "201":
+          description: Cours créé
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Course'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '409':
-          description: Course code already in use
+              schema: { $ref: "#/components/schemas/Course" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "409":
+          description: Code de cours déjà utilisé ("Course code already in use")
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: { $ref: "#/components/schemas/Error" }
 
-  /courses/{courseId}:
+  /courses/{id}:
     parameters:
-      - $ref: '#/components/parameters/CourseId'
-
+      - $ref: "#/components/parameters/Id"
     put:
       tags: [Courses]
-      summary: Update a course
-      description: Admin only.
+      summary: Modifier un cours
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateCourseRequest'
+              type: object
+              required: [code, name]
+              properties:
+                code: { type: string }
+                name: { type: string }
+                description: { type: string, nullable: true }
       responses:
-        '200':
-          description: Course updated
+        "200":
+          description: Cours mis à jour
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Course'
-        '404': { $ref: '#/components/responses/NotFound' }
-
+              schema: { $ref: "#/components/schemas/Course" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Code déjà utilisé par un autre cours
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
     delete:
       tags: [Courses]
-      summary: Delete a course
-      description: Admin only.
+      summary: Supprimer un cours (refusé s'il possède des examens, RG-09)
       responses:
-        '204':
-          description: Course deleted
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409':
-          description: Course has exams, deletion rejected
+        "200":
+          description: Cours supprimé
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Le cours possède des examens ("Cannot delete a course that has exams")
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: { $ref: "#/components/schemas/Error" }
 
   /exams:
     get:
       tags: [Exams]
-      summary: List exams
-      description: Admin only.
-      parameters:
-        - name: courseId
-          in: query
-          schema:
-            type: string
+      summary: Liste des examens
       responses:
-        '200':
-          description: List of exams
+        "200":
+          description: Examens avec leur cours et leurs compteurs
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/Exam'
-
+                items: { $ref: "#/components/schemas/Exam" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
     post:
       tags: [Exams]
-      summary: Create an exam
-      description: Admin only.
+      summary: Créer un examen
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateExamRequest'
+            schema: { $ref: "#/components/schemas/ExamInput" }
       responses:
-        '201':
-          description: Exam created
+        "201":
+          description: Examen créé
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Exam'
-        '400': { $ref: '#/components/responses/BadRequest' }
+              schema: { $ref: "#/components/schemas/Exam" }
+        "400":
+          description: Champs manquants, cours inconnu ("Course not found") ou dates invalides ("End date must be after start date")
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
 
-  /exams/{examId}:
+  /exams/{id}:
     parameters:
-      - $ref: '#/components/parameters/ExamId'
-
+      - $ref: "#/components/parameters/Id"
     get:
       tags: [Exams]
-      summary: Get exam details
-      description: Admin only.
+      summary: Détail d'un examen
       responses:
-        '200':
-          description: Exam details
+        "200":
+          description: L'examen avec cours et compteurs
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/AdminExamDetail'
-        '404': { $ref: '#/components/responses/NotFound' }
-
+              schema: { $ref: "#/components/schemas/Exam" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
     put:
       tags: [Exams]
-      summary: Update an exam
-      description: Admin only.
+      summary: Modifier un examen
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateExamRequest'
+            schema: { $ref: "#/components/schemas/ExamInput" }
       responses:
-        '200':
-          description: Exam updated
+        "200":
+          description: Examen mis à jour
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Exam'
-        '404': { $ref: '#/components/responses/NotFound' }
-
+              schema: { $ref: "#/components/schemas/Exam" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
     delete:
       tags: [Exams]
-      summary: Delete an exam
-      description: Admin only.
+      summary: Supprimer un examen (cascade questions/choix ; refusé s'il a des tentatives, RG-09)
       responses:
-        '204':
-          description: Exam deleted
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409':
-          description: Exam has attempts, deletion rejected
+        "200":
+          description: Examen supprimé
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: L'examen a des tentatives ("Cannot delete an exam that has attempts")
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /exams/{id}/results:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Exams]
+      summary: Résultats d'un examen (notes, moyenne)
+      responses:
+        "200":
+          description: Résultats triés par note décroissante puis nom
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                type: object
+                properties:
+                  exam:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      title: { type: string }
+                  total_points: { type: integer, example: 5 }
+                  average:
+                    type: number
+                    nullable: true
+                    description: Moyenne arrondie à 2 décimales, null si aucune tentative
+                    example: 2.5
+                  attempt_count: { type: integer, example: 2 }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        student_id: { type: integer }
+                        name: { type: string }
+                        score: { type: integer }
+                        submitted_at: { type: string, format: date-time }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
 
-  /exams/{examId}/questions:
+  /exams/{id}/questions:
     parameters:
-      - $ref: '#/components/parameters/ExamId'
-
+      - $ref: "#/components/parameters/Id"
     get:
       tags: [Questions]
-      summary: List an exam's questions
-      description: Admin only.
+      summary: Questions d'un examen (vue admin, is_correct visible)
       responses:
-        '200':
-          description: List of questions
+        "200":
+          description: Questions triées par position, choix imbriqués
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/AdminQuestion'
-
+                items: { $ref: "#/components/schemas/Question" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
     post:
       tags: [Questions]
-      summary: Add a question to an exam
-      description: Admin only.
+      summary: Ajouter une question (2 à 6 choix, exactement 1 correct — RG-04)
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateQuestionRequest'
+            schema: { $ref: "#/components/schemas/QuestionInput" }
       responses:
-        '201':
-          description: Question created
+        "201":
+          description: Question créée avec ses choix
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/AdminQuestion'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '409':
-          description: Exam already has attempts, questions are locked
+              schema: { $ref: "#/components/schemas/Question" }
+        "400":
+          description: RG-04 violée ("A question must have between 2 and 6 choices" / "A question must have exactly one correct choice") ou champs manquants
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/ConflictLocked" }
 
-  /questions/{questionId}:
+  /questions/{id}:
     parameters:
-      - $ref: '#/components/parameters/QuestionId'
-
+      - $ref: "#/components/parameters/Id"
     put:
       tags: [Questions]
-      summary: Update a question
-      description: Admin only.
+      summary: Modifier une question (les anciens choix sont remplacés)
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateQuestionRequest'
+            schema: { $ref: "#/components/schemas/QuestionInput" }
       responses:
-        '200':
-          description: Question updated
+        "200":
+          description: Question mise à jour
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/AdminQuestion'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409':
-          description: Exam already has attempts, questions are locked
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
+              schema: { $ref: "#/components/schemas/Question" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/ConflictLocked" }
     delete:
       tags: [Questions]
-      summary: Delete a question
-      description: Admin only.
+      summary: Supprimer une question (choix supprimés en cascade)
       responses:
-        '204':
-          description: Question deleted
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409':
-          description: Exam already has attempts, questions are locked
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /exams/{examId}/results:
-    parameters:
-      - $ref: '#/components/parameters/ExamId'
-
-    get:
-      tags: [Results]
-      summary: Get exam results
-      description: Admin only.
-      responses:
-        '200':
-          description: Exam results
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExamResultsResponse'
-        '404': { $ref: '#/components/responses/NotFound' }
+        "200":
+          description: Question supprimée
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenAdmin" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/ConflictLocked" }
 
   /my/exams:
     get:
-      tags: [MyExams]
-      summary: Get available exams for the logged-in student
+      tags: [My]
+      summary: Examens disponibles pour l'étudiant connecté (fenêtre ouverte, non passés)
       responses:
-        '200':
-          description: Available exams
+        "200":
+          description: Liste possiblement vide
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/StudentExam'
+                items: { $ref: "#/components/schemas/MyExam" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenStudent" }
 
-  /my/exams/{examId}:
+  /my/exams/{id}:
     parameters:
-      - $ref: '#/components/parameters/ExamId'
-
+      - $ref: "#/components/parameters/Id"
     get:
-      tags: [MyExams]
-      summary: Get exam content to take
+      tags: [My]
+      summary: Détail d'un examen à passer (sans is_correct — RG-07)
       responses:
-        '200':
-          description: Exam content
+        "200":
+          description: Examen avec questions et choix (id et texte uniquement)
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/StudentExamDetail'
-        '403':
-          description: Exam window is closed, or exam already taken
+              schema: { $ref: "#/components/schemas/MyExamDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Fenêtre fermée ("Exam is not available") ou mauvais rôle
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404': { $ref: '#/components/responses/NotFound' }
+              schema: { $ref: "#/components/schemas/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Examen déjà passé ("Exam already taken")
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
-  /my/exams/{examId}/submit:
+  /my/exams/{id}/submit:
     parameters:
-      - $ref: '#/components/parameters/ExamId'
-
+      - $ref: "#/components/parameters/Id"
     post:
-      tags: [MyExams]
-      summary: Submit exam answers
+      tags: [My]
+      summary: Soumettre ses réponses (note calculée côté serveur — RG-05/06)
+      description: >
+        Les questions absentes du tableau valent 0 point (soumission partielle
+        autorisée). Chaque question_id doit appartenir à l'examen, chaque
+        choice_id à sa question, sans doublon de question_id.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubmitExamRequest'
+              type: object
+              required: [answers]
+              properties:
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    required: [question_id, choice_id]
+                    properties:
+                      question_id: { type: integer, example: 1 }
+                      choice_id: { type: integer, example: 3 }
       responses:
-        '200':
-          description: Score calculated and full correction returned
+        "201":
+          description: Tentative enregistrée, note et correction complète (RG-12)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExamResult'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '403':
-          description: Exam window is closed
+                type: object
+                properties:
+                  score: { type: integer, example: 2 }
+                  total_points: { type: integer, example: 5 }
+                  correction:
+                    type: array
+                    description: Une entrée par question de l'examen, dans l'ordre
+                    items: { $ref: "#/components/schemas/CorrectionLine" }
+        "400":
+          description: Réponses invalides (choix d'une autre question, question d'un autre examen, doublon, tableau manquant)
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '409':
-          description: Exam already taken by this student
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Fenêtre fermée ("Exam is not available") ou mauvais rôle
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: { $ref: "#/components/schemas/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Déjà soumis ("Exam already taken" — RG-02)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /my/results:
     get:
-      tags: [MyExams]
-      summary: Get the logged-in student's result history
+      tags: [My]
+      summary: Historique des résultats de l'étudiant connecté
       responses:
-        '200':
-          description: Result history
+        "200":
+          description: Tentatives triées de la plus récente à la plus ancienne
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MyResultSummary'
+                  type: object
+                  properties:
+                    exam_id: { type: integer }
+                    title: { type: string }
+                    course_code: { type: string, example: PROG2 }
+                    score: { type: integer }
+                    total_points: { type: integer }
+                    submitted_at: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/ForbiddenStudent" }
+
+security:
+  - bearerAuth: []
 
 components:
-
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: Jeton obtenu via POST /auth/login, payload { userId, role }, validité 24 h
 
   parameters:
-    StudentId:
-      name: studentId
+    Id:
+      name: id
       in: path
       required: true
-      schema:
-        type: string
+      schema: { type: integer, minimum: 1 }
 
-    CourseId:
-      name: courseId
-      in: path
-      required: true
-      schema:
-        type: string
-
-    ExamId:
-      name: examId
-      in: path
-      required: true
-      schema:
-        type: string
-
-    QuestionId:
-      name: questionId
-      in: path
-      required: true
-      schema:
-        type: string
+  responses:
+    BadRequest:
+      description: Données invalides ou identifiant non numérique
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Jeton absent ("No token provided") ou invalide ("Invalid or expired token")
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ForbiddenAdmin:
+      description: Réservé aux administrateurs ("Admin access required")
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ForbiddenStudent:
+      description: Réservé aux étudiants ("Student access required")
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ConflictLocked:
+      description: L'examen a des tentatives, questions verrouillées ("Cannot modify questions of an exam that has attempts" — RG-08)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-
-    LoginResponse:
+    Error:
       type: object
       properties:
-        token:
-          type: string
-        user:
-          $ref: '#/components/schemas/User'
-
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-        firstName:
-          type: string
-        lastName:
-          type: string
-        email:
-          type: string
-          format: email
-        role:
-          type: string
-          enum: [ADMIN, STUDENT]
+        message: { type: string, example: Exam not found }
 
     Student:
-      allOf:
-        - $ref: '#/components/schemas/User'
-        - type: object
-          properties:
-            isActive:
-              type: boolean
-            createdAt:
-              type: string
-              format: date-time
-
-    CreateStudentRequest:
-      type: object
-      required: [firstName, lastName, email, password]
-      properties:
-        firstName:
-          type: string
-        lastName:
-          type: string
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          minLength: 8
-
-    UpdateStudentRequest:
       type: object
       properties:
-        firstName:
-          type: string
-        lastName:
-          type: string
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          minLength: 8
+        id: { type: integer, example: 2 }
+        name: { type: string, example: Jean Rakoto }
+        email: { type: string, format: email, example: jean.rakoto@examhub.local }
+        is_active: { type: boolean, example: true }
+        created_at: { type: string, format: date-time }
 
     Course:
       type: object
       properties:
-        id:
-          type: string
-        code:
-          type: string
-          example: PROG2
-        name:
-          type: string
-        description:
-          type: string
+        id: { type: integer, example: 1 }
+        code: { type: string, example: PROG2 }
+        name: { type: string, example: Programmation web }
+        description: { type: string, nullable: true }
+        exam_count: { type: integer, example: 1 }
 
-    CreateCourseRequest:
+    ExamInput:
       type: object
-      required: [code, name]
+      required: [course_id, title, starts_at, ends_at]
       properties:
-        code:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-
-    UpdateCourseRequest:
-      type: object
-      properties:
-        code:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-
-    CreateExamRequest:
-      type: object
-      required: [courseId, title, startDate, endDate]
-      properties:
-        courseId:
-          type: string
-        title:
-          type: string
-        description:
-          type: string
-        startDate:
-          type: string
-          format: date-time
-        endDate:
-          type: string
-          format: date-time
-
-    UpdateExamRequest:
-      type: object
-      properties:
-        title:
-          type: string
-        description:
-          type: string
-        startDate:
-          type: string
-          format: date-time
-        endDate:
-          type: string
-          format: date-time
+        course_id: { type: integer, example: 1 }
+        title: { type: string, example: Quiz HTML de base }
+        description: { type: string, nullable: true }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: string, format: date-time }
 
     Exam:
       type: object
       properties:
-        id:
-          type: string
-        courseId:
-          type: string
-        title:
-          type: string
-        description:
-          type: string
-        startDate:
-          type: string
-          format: date-time
-        endDate:
-          type: string
-          format: date-time
-
-    AdminExamDetail:
-      allOf:
-        - $ref: '#/components/schemas/Exam'
-        - type: object
+        id: { type: integer, example: 1 }
+        title: { type: string, example: Quiz HTML de base }
+        description: { type: string, nullable: true }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: string, format: date-time }
+        course:
+          type: object
           properties:
-            questions:
-              type: array
-              items:
-                $ref: '#/components/schemas/AdminQuestion'
-            attemptsCount:
-              type: integer
+            id: { type: integer }
+            code: { type: string }
+            name: { type: string }
+        question_count: { type: integer, example: 2 }
+        attempt_count: { type: integer, example: 0 }
 
-    ChoiceInput:
-      type: object
-      required: [text, isCorrect]
-      properties:
-        text:
-          type: string
-        isCorrect:
-          type: boolean
-
-    AdminChoice:
+    Choice:
       type: object
       properties:
-        id:
-          type: string
-        text:
-          type: string
-        isCorrect:
-          type: boolean
+        id: { type: integer }
+        text: { type: string, example: HyperText Markup Language }
+        is_correct: { type: boolean }
 
-    StudentChoice:
+    Question:
       type: object
       properties:
-        id:
-          type: string
-        text:
-          type: string
+        id: { type: integer }
+        exam_id: { type: integer }
+        statement: { type: string, example: Que signifie HTML ? }
+        points: { type: integer, example: 2 }
+        position: { type: integer, example: 1 }
+        choices:
+          type: array
+          items: { $ref: "#/components/schemas/Choice" }
 
-    CreateQuestionRequest:
+    QuestionInput:
       type: object
-      required: [statement, points, choices]
+      required: [statement, choices]
       properties:
-        statement:
-          type: string
-        points:
-          type: number
-          minimum: 0
+        statement: { type: string }
+        points: { type: integer, default: 1, minimum: 1 }
+        position: { type: integer, default: 1 }
         choices:
           type: array
           minItems: 2
           maxItems: 6
+          description: Exactement un choix avec is_correct = true
           items:
-            $ref: '#/components/schemas/ChoiceInput'
+            type: object
+            required: [text, is_correct]
+            properties:
+              text: { type: string }
+              is_correct: { type: boolean }
 
-    AdminQuestion:
+    MyExam:
       type: object
       properties:
-        id:
-          type: string
-        examId:
-          type: string
-        statement:
-          type: string
-        points:
-          type: number
-        choices:
-          type: array
-          items:
-            $ref: '#/components/schemas/AdminChoice'
-
-    StudentQuestion:
-      type: object
-      properties:
-        id:
-          type: string
-        statement:
-          type: string
-        points:
-          type: number
-        choices:
-          type: array
-          items:
-            $ref: '#/components/schemas/StudentChoice'
-
-    StudentExam:
-      allOf:
-        - $ref: '#/components/schemas/Exam'
-        - type: object
+        id: { type: integer }
+        title: { type: string }
+        course:
+          type: object
           properties:
-            courseCode:
-              type: string
+            code: { type: string }
+            name: { type: string }
+        description: { type: string, nullable: true }
+        ends_at: { type: string, format: date-time }
+        question_count: { type: integer }
+        total_points: { type: integer }
 
-    StudentExamDetail:
+    MyExamDetail:
       allOf:
-        - $ref: '#/components/schemas/Exam'
+        - $ref: "#/components/schemas/MyExam"
         - type: object
           properties:
             questions:
               type: array
+              description: Sans is_correct (RG-07)
               items:
-                $ref: '#/components/schemas/StudentQuestion'
+                type: object
+                properties:
+                  id: { type: integer }
+                  statement: { type: string }
+                  points: { type: integer }
+                  position: { type: integer }
+                  choices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        text: { type: string }
 
-    SubmitExamRequest:
-      type: object
-      required: [answers]
-      properties:
-        answers:
-          type: array
-          items:
-            type: object
-            required: [questionId, choiceId]
-            properties:
-              questionId:
-                type: string
-              choiceId:
-                type: string
-
-    QuestionCorrection:
+    CorrectionLine:
       type: object
       properties:
-        questionId:
-          type: string
-        statement:
-          type: string
-        selectedChoiceId:
-          type: string
-          nullable: true
-        correctChoiceId:
-          type: string
-        isCorrect:
-          type: boolean
-        pointsEarned:
-          type: number
-
-    ExamResult:
-      type: object
-      properties:
-        attemptId:
-          type: string
-        examId:
-          type: string
-        examTitle:
-          type: string
-        courseCode:
-          type: string
-        score:
-          type: number
-        maxScore:
-          type: number
-        submittedAt:
-          type: string
-          format: date-time
-        corrections:
-          type: array
-          items:
-            $ref: '#/components/schemas/QuestionCorrection'
-
-    MyResultSummary:
-      type: object
-      properties:
-        id:
-          type: string
-        examId:
-          type: string
-        examTitle:
-          type: string
-        courseCode:
-          type: string
-        score:
-          type: number
-        submittedAt:
-          type: string
-          format: date-time
-
-    StudentResultSummary:
-      type: object
-      properties:
-        studentId:
-          type: string
-        studentName:
-          type: string
-        score:
-          type: number
-          nullable: true
-        submittedAt:
-          type: string
-          format: date-time
-          nullable: true
-
-    ExamResultsResponse:
-      type: object
-      properties:
-        examId:
-          type: string
-        average:
-          type: number
-        attemptsCount:
+        question_id: { type: integer }
+        statement: { type: string }
+        points: { type: integer }
+        student_choice_id:
           type: integer
-        students:
-          type: array
-          items:
-            $ref: '#/components/schemas/StudentResultSummary'
-
-    Error:
-      type: object
-      required: [message]
-      properties:
-        message:
-          type: string
-          example: "Resource not found"
-
-  responses:
-    BadRequest:
-      description: Invalid data
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Unauthorized:
-      description: Authentication required or invalid token
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Forbidden:
-      description: Access not authorized for this role
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          nullable: true
+          description: null si la question n'a pas été répondue
+        correct_choice_id: { type: integer }
+        is_correct: { type: boolean }
