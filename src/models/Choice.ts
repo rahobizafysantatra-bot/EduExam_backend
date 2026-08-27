@@ -5,6 +5,12 @@ export interface Choice {
   isCorrect: boolean;
 }
 
-export type CreateChoiceDTO = Omit<Choice, 'id' | 'questionId'>;
+export interface CreateChoiceDTO {
+  text: string;
+  isCorrect: boolean;
+}
 
-export type ChoiceForStudent = Omit<Choice, 'isCorrect'>;
+export interface ChoiceForStudent {
+  id: string;
+  text: string;
+}

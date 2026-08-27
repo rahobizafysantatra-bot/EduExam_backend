@@ -7,7 +7,7 @@ export interface Answer {
 
 export interface SubmitAnswerDTO {
   questionId: string;
-  choiceId: string | null;
+  choiceId: string;
 }
 
 export interface SubmitExamDTO {
@@ -18,16 +18,13 @@ export interface AnswerCorrectionDTO {
   questionId: string;
   statement: string;
   points: number;
-  earnedPoints: number;
-  choices: { id: string; text: string; isCorrect: boolean }[];
-  selectedChoiceId: string | null;
+  studentChoiceId: string | null;
+  correctChoiceId: string;
+  isCorrect: boolean;
 }
 
 export interface ExamResultDetailDTO {
-  attemptId: string;
-  examId: string;
   score: number;
-  maxScore: number;
-  submittedAt: Date;
-  corrections: AnswerCorrectionDTO[];
+  totalPoints: number;
+  correction: AnswerCorrectionDTO[];
 }

@@ -6,23 +6,29 @@ export interface Attempt {
   score: number;
 }
 
-export type AttemptSummaryDTO = Pick<Attempt, 'id' | 'examId' | 'submittedAt' | 'score'> & {
-  examTitle: string;
+export interface AttemptSummaryDTO {
+  examId: string;
+  title: string;
   courseCode: string;
-  maxScore: number;
-};
+  score: number;
+  totalPoints: number;
+  submittedAt: Date;
+}
 
 export interface ExamResultRowDTO {
   studentId: string;
-  firstName: string;
-  lastName: string;
-  attempted: boolean;
-  score: number | null;
-  submittedAt: Date | null;
+  name: string;
+  score: number;
+  submittedAt: Date;
 }
 
 export interface ExamResultsDTO {
+  exam: {
+    id: string;
+    title: string;
+  };
+  totalPoints: number;
+  average: number | null;
+  attemptCount: number;
   results: ExamResultRowDTO[];
-  average: number;
-  attemptsCount: number;
 }
