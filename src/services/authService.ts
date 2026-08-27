@@ -1,36 +1,38 @@
 import { UserRepository } from '../repositories/userRepository';
 import { comparePassword } from '../security/password';
 import { generateToken } from '../security/jwt';
-import { HttpError } from '../security/HttpError';
+import { UnauthorizedError } from '../security/errors';
 
 const userRepository = new UserRepository();
 
 export const login = async (email: string, password: string) => {
   const user = await userRepository.findByEmail(email);
+
   if (!user) {
-    throw new HttpError(401, 'Invalid email or password');
+    throw new UnauthorizedError('Invalid email or password');
   }
 
   if (!user.isActive) {
-    throw new HttpError(401, 'This account has been deactivated');
+    throw new UnauthorizedError('Account disabled');
   }
 
   const passwordMatches = await comparePassword(password, user.passwordHash);
+
   if (!passwordMatches) {
-    throw new HttpError(401, 'Invalid email or password');
+    throw new UnauthorizedError('Invalid email or password');
   }
 
-  const token = generateToken({ id: user.id, role: user.role });
+  const token = generateToken({
+    id: user.id,
+    role: user.role,
+  });
 
   return {
     token,
     user: {
       id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
+      name: user.name,
       role: user.role,
-      isActive: user.isActive,
     },
   };
 };
