@@ -1,13 +1,13 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './types';
 import { verifyToken } from './jwt';
-import { HttpError } from './HttpError';
+import { UnauthorizedError } from './errors';
 
-export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authMiddleware = (req: AuthRequest, _res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(new HttpError(401, 'Missing or invalid Authorization header'));
+    return next(new UnauthorizedError('No token provided'));
   }
 
   const token = authHeader.slice('Bearer '.length);
@@ -15,7 +15,7 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
   try {
     req.user = verifyToken(token);
     next();
-  } catch (err) {
-    next(new HttpError(401, 'Invalid or expired token'));
+  } catch {
+    next(new UnauthorizedError('Invalid or expired token'));
   }
 };
