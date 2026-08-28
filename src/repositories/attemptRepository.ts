@@ -157,11 +157,28 @@ export const findResultsForExam = async (examId: string): Promise<ExamResultsDTO
 
 export const findByStudentId = async (studentId: string): Promise<AttemptSummaryDTO[]> => {
   const result = await pool.query(
-    `SELECT a.exam_id, a.submitted_at, a.score, e.title, c.code AS course_code, COALESCE(SUM(q.points), 0) AS total_points
+    `SELECT a.exam_id, a.submitted_at, a.score, e.title, c.code AS course_code, COALESCE(SUM(q.points), 0) AS total_points,
+       COALESCE(json_agg(
+         json_build_object(
+           'questionId', q.id,
+           'statement', q.statement,
+           'points', q.points,
+           'studentChoiceId', answer.choice_id,
+           'correctChoiceId', correct_choice.id,
+           'isCorrect', answer.choice_id IS NOT NULL AND answer.choice_id = correct_choice.id,
+           'choices', COALESCE((
+             SELECT json_agg(json_build_object('id', choice.id, 'text', choice.text) ORDER BY choice.id)
+             FROM choice
+             WHERE choice.question_id = q.id
+           ), '[]'::json)
+         ) ORDER BY q.position, q.id
+       ) FILTER (WHERE q.id IS NOT NULL), '[]'::json) AS correction
      FROM attempt a
      JOIN exam e ON e.id = a.exam_id
      JOIN course c ON c.id = e.course_id
      LEFT JOIN question q ON q.exam_id = e.id
+     LEFT JOIN answer ON answer.attempt_id = a.id AND answer.question_id = q.id
+     LEFT JOIN choice correct_choice ON correct_choice.question_id = q.id AND correct_choice.is_correct = true
      WHERE a.student_id = $1
      GROUP BY a.id, a.exam_id, a.submitted_at, a.score, e.title, c.code
      ORDER BY a.submitted_at DESC`,
@@ -175,5 +192,6 @@ export const findByStudentId = async (studentId: string): Promise<AttemptSummary
     score: Number(row.score),
     totalPoints: Number(row.total_points),
     submittedAt: row.submitted_at,
+    correction: row.correction,
   }));
 };

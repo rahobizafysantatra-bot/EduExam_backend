@@ -97,12 +97,10 @@ INSERT INTO course (id, code, name, description) VALUES
 ('CS0003', 'DONNEES1', 'Database Fundamentals', 'Basic database commands using PostgreSQL/SQL'),
 ('CS0004', 'LV1', 'French Language', 'French as a foreign language');
 
-INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES
-('STD25001', 'Alice', 'Alice Martin', 'alice.martin@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25002', 'Bob', 'Bob Durand', 'bob.durand@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25003', 'Chloe', 'Chloe Bernard', 'chloe.bernard@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25004', 'David', 'David Nguyen', 'david.nguyen@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE);
-
+INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES 
+('admin-001', 'Admin', 'Administrateur', 'admin@example.com',
+ '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG', 'ADMIN', TRUE);
+ 
 INSERT INTO exam (id, course_id, title, description, start_date, end_date) VALUES
 ('EX0001', 'CS0001', 'PROG1 Midterm - Algorithm Basics', 'Covers variables, complexity and arrays', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
 ('EX0002', 'CS0002', 'PROG2 Midterm - Java OOP', 'Covers inheritance and polymorphism', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),

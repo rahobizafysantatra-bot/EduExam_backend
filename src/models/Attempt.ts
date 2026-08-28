@@ -13,6 +13,15 @@ export interface AttemptSummaryDTO {
   score: number;
   totalPoints: number;
   submittedAt: Date;
+  correction: Array<{
+    questionId: string;
+    statement: string;
+    points: number;
+    studentChoiceId: string | null;
+    correctChoiceId: string;
+    isCorrect: boolean;
+    choices: Array<{ id: string; text: string }>;
+  }>;
 }
 
 export interface ExamResultRowDTO {

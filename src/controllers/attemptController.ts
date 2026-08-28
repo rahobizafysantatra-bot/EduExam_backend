@@ -13,7 +13,7 @@ export const listMyExams = async (req: AuthRequest, res: Response, next: NextFun
 
 export const getMyExam = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const exam = await AttemptService.getExamForStudent(String(req.params.examId), req.user!.id);
+    const exam = await AttemptService.getExamForStudent(String(req.params.id), req.user!.id);
     res.status(200).json(exam);
   } catch (error) {
     next(error);
