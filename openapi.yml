@@ -51,13 +51,13 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: JWT valable 24 h contenant userId et role
+                    description: JWT valable 8 h contenant id et role
                   user:
                     type: object
                     properties:
-                      id: { type: integer, example: 1 }
+                      id: { type: string, example: 1 }
                       name: { type: string, example: Administrateur }
-                      role: { type: string, enum: [admin, student] }
+                      role: { type: string, enum: [ADMIN, STUDENT] }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401":
           description: Identifiants invalides ("Invalid email or password") ou compte désactivé ("Account disabled")
@@ -90,7 +90,8 @@ paths:
               type: object
               required: [name, email, password]
               properties:
-                name: { type: string, example: Jean Rakoto }
+                firstName: { type: string, nullable: true, example: Jean }
+                name: { type: string, example: Rakoto }
                 email: { type: string, format: email }
                 password: { type: string, description: Mot de passe initial (haché en bcrypt côté serveur) }
       responses:
@@ -122,9 +123,10 @@ paths:
               type: object
               required: [name, email]
               properties:
+                firstName: { type: string, nullable: true }
                 name: { type: string }
                 email: { type: string, format: email }
-                is_active: { type: boolean }
+                isActive: { type: boolean }
                 password:
                   type: string
                   description: Si présent, réinitialise le mot de passe
@@ -148,7 +150,7 @@ paths:
       summary: Désactiver un étudiant (jamais de suppression physique, RG-10)
       responses:
         "200":
-          description: Compte désactivé (is_active = false)
+          description: Compte désactivé (isActive = false)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Student" }
@@ -163,7 +165,7 @@ paths:
       summary: Liste des cours
       responses:
         "200":
-          description: Cours avec leur nombre d'examens
+          description: Liste des cours
           content:
             application/json:
               schema:
@@ -237,7 +239,11 @@ paths:
       summary: Supprimer un cours (refusé s'il possède des examens, RG-09)
       responses:
         "200":
-          description: Cours supprimé
+          description: Cours supprimé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/ForbiddenAdmin" }
@@ -254,7 +260,7 @@ paths:
       summary: Liste des examens
       responses:
         "200":
-          description: Examens avec leur cours et leurs compteurs
+          description: Liste des examens
           content:
             application/json:
               schema:
@@ -292,7 +298,7 @@ paths:
       summary: Détail d'un examen
       responses:
         "200":
-          description: L'examen avec cours et compteurs
+          description: Examen
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Exam" }
@@ -307,7 +313,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/ExamInput" }
+            schema: { $ref: "#/components/schemas/ExamUpdateInput" }
       responses:
         "200":
           description: Examen mis à jour
@@ -323,7 +329,11 @@ paths:
       summary: Supprimer un examen (cascade questions/choix ; refusé s'il a des tentatives, RG-09)
       responses:
         "200":
-          description: Examen supprimé
+          description: Examen supprimé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/ForbiddenAdmin" }
@@ -351,24 +361,24 @@ paths:
                   exam:
                     type: object
                     properties:
-                      id: { type: integer }
+                      id: { type: string }
                       title: { type: string }
-                  total_points: { type: integer, example: 5 }
+                  totalPoints: { type: number, example: 5 }
                   average:
                     type: number
                     nullable: true
                     description: Moyenne arrondie à 2 décimales, null si aucune tentative
                     example: 2.5
-                  attempt_count: { type: integer, example: 2 }
+                  attemptCount: { type: integer, example: 2 }
                   results:
                     type: array
                     items:
                       type: object
                       properties:
-                        student_id: { type: integer }
+                        studentId: { type: integer }
                         name: { type: string }
                         score: { type: integer }
-                        submitted_at: { type: string, format: date-time }
+                        submittedAt: { type: string, format: date-time }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/ForbiddenAdmin" }
@@ -379,7 +389,7 @@ paths:
       - $ref: "#/components/parameters/Id"
     get:
       tags: [Questions]
-      summary: Questions d'un examen (vue admin, is_correct visible)
+      summary: Questions d'un examen (vue admin, isCorrect visible)
       responses:
         "200":
           description: Questions triées par position, choix imbriqués
@@ -443,7 +453,11 @@ paths:
       summary: Supprimer une question (choix supprimés en cascade)
       responses:
         "200":
-          description: Question supprimée
+          description: Question supprimée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/ForbiddenAdmin" }
@@ -470,7 +484,7 @@ paths:
       - $ref: "#/components/parameters/Id"
     get:
       tags: [My]
-      summary: Détail d'un examen à passer (sans is_correct — RG-07)
+      summary: Détail d'un examen à passer (sans isCorrect — RG-07)
       responses:
         "200":
           description: Examen avec questions et choix (id et texte uniquement)
@@ -499,8 +513,8 @@ paths:
       summary: Soumettre ses réponses (note calculée côté serveur — RG-05/06)
       description: >
         Les questions absentes du tableau valent 0 point (soumission partielle
-        autorisée). Chaque question_id doit appartenir à l'examen, chaque
-        choice_id à sa question, sans doublon de question_id.
+        autorisée). Chaque questionId doit appartenir à l'examen, chaque
+        choiceId à sa question, sans doublon de questionId.
       requestBody:
         required: true
         content:
@@ -513,10 +527,10 @@ paths:
                   type: array
                   items:
                     type: object
-                    required: [question_id, choice_id]
+                    required: [questionId, choiceId]
                     properties:
-                      question_id: { type: integer, example: 1 }
-                      choice_id: { type: integer, example: 3 }
+                      questionId: { type: string, example: 1 }
+                      choiceId: { type: string, example: 3 }
       responses:
         "201":
           description: Tentative enregistrée, note et correction complète (RG-12)
@@ -525,8 +539,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  score: { type: integer, example: 2 }
-                  total_points: { type: integer, example: 5 }
+                  score: { type: number, example: 2 }
+                  totalPoints: { type: number, example: 5 }
                   correction:
                     type: array
                     description: Une entrée par question de l'examen, dans l'ordre
@@ -563,12 +577,16 @@ paths:
                 items:
                   type: object
                   properties:
-                    exam_id: { type: integer }
+                    examId: { type: string }
                     title: { type: string }
-                    course_code: { type: string, example: PROG2 }
-                    score: { type: integer }
-                    total_points: { type: integer }
-                    submitted_at: { type: string, format: date-time }
+                    courseCode: { type: string, example: PROG2 }
+                    score: { type: number }
+                    totalPoints: { type: number }
+                    submittedAt: { type: string, format: date-time }
+                    correction:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/CorrectionLine"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/ForbiddenStudent" }
 
@@ -581,7 +599,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Jeton obtenu via POST /auth/login, payload { userId, role }, validité 24 h
+      description: Jeton obtenu via POST /auth/login, payload { id, role }, validité 8 h
 
   parameters:
     Id:
@@ -592,7 +610,7 @@ components:
 
   responses:
     BadRequest:
-      description: Données invalides ou identifiant non numérique
+      description: Données invalides ou requête mal formée
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -623,6 +641,11 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
+    Message:
+      type: object
+      properties:
+        message: { type: string, example: Exam deleted }
+
     Error:
       type: object
       properties:
@@ -631,62 +654,63 @@ components:
     Student:
       type: object
       properties:
-        id: { type: integer, example: 2 }
-        name: { type: string, example: Jean Rakoto }
-        email: { type: string, format: email, example: jean.rakoto@examhub.local }
-        is_active: { type: boolean, example: true }
-        created_at: { type: string, format: date-time }
+        id: { type: string, example: STD26001 }
+        firstName: { type: string, nullable: true, example: Jean }
+        name: { type: string, example: Rakoto }
+        email: { type: string, format: email, example: jean.rakoto@example.com }
+        role: { type: string, enum: [STUDENT] }
+        isActive: { type: boolean, example: true }
 
     Course:
       type: object
       properties:
-        id: { type: integer, example: 1 }
+        id: { type: string, example: CS0001 }
         code: { type: string, example: PROG2 }
         name: { type: string, example: Programmation web }
         description: { type: string, nullable: true }
-        exam_count: { type: integer, example: 1 }
 
     ExamInput:
       type: object
-      required: [course_id, title, starts_at, ends_at]
+      required: [courseId, title, startDate, endDate]
       properties:
-        course_id: { type: integer, example: 1 }
+        courseId: { type: string, example: CS0001 }
         title: { type: string, example: Quiz HTML de base }
         description: { type: string, nullable: true }
-        starts_at: { type: string, format: date-time }
-        ends_at: { type: string, format: date-time }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+
+    ExamUpdateInput:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string, nullable: true }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
 
     Exam:
       type: object
       properties:
-        id: { type: integer, example: 1 }
+        id: { type: string, example: EX0001 }
+        courseId: { type: string, example: CS0001 }
         title: { type: string, example: Quiz HTML de base }
         description: { type: string, nullable: true }
-        starts_at: { type: string, format: date-time }
-        ends_at: { type: string, format: date-time }
-        course:
-          type: object
-          properties:
-            id: { type: integer }
-            code: { type: string }
-            name: { type: string }
-        question_count: { type: integer, example: 2 }
-        attempt_count: { type: integer, example: 0 }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
 
     Choice:
       type: object
       properties:
         id: { type: integer }
         text: { type: string, example: HyperText Markup Language }
-        is_correct: { type: boolean }
+        isCorrect: { type: boolean }
 
     Question:
       type: object
       properties:
         id: { type: integer }
-        exam_id: { type: integer }
-        statement: { type: string, example: Que signifie HTML ? }
-        points: { type: integer, example: 2 }
+        examId: { type: string }
+        statement: { type: string, example: "Que signifie HTML ?" }
+        points: { type: number, example: 2 }
         position: { type: integer, example: 1 }
         choices:
           type: array
@@ -697,24 +721,24 @@ components:
       required: [statement, choices]
       properties:
         statement: { type: string }
-        points: { type: integer, default: 1, minimum: 1 }
+        points: { type: number, default: 1, minimum: 1 }
         position: { type: integer, default: 1 }
         choices:
           type: array
           minItems: 2
           maxItems: 6
-          description: Exactement un choix avec is_correct = true
+          description: Exactement un choix avec isCorrect = true
           items:
             type: object
-            required: [text, is_correct]
+            required: [text, isCorrect]
             properties:
               text: { type: string }
-              is_correct: { type: boolean }
+              isCorrect: { type: boolean }
 
     MyExam:
       type: object
       properties:
-        id: { type: integer }
+        id: { type: string }
         title: { type: string }
         course:
           type: object
@@ -722,42 +746,52 @@ components:
             code: { type: string }
             name: { type: string }
         description: { type: string, nullable: true }
-        ends_at: { type: string, format: date-time }
-        question_count: { type: integer }
-        total_points: { type: integer }
+        endDate: { type: string, format: date-time }
+        questionCount: { type: integer }
+        totalPoints: { type: number }
 
     MyExamDetail:
-      allOf:
-        - $ref: "#/components/schemas/MyExam"
-        - type: object
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        course:
+          type: object
           properties:
-            questions:
-              type: array
-              description: Sans is_correct (RG-07)
-              items:
-                type: object
-                properties:
-                  id: { type: integer }
-                  statement: { type: string }
-                  points: { type: integer }
-                  position: { type: integer }
-                  choices:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id: { type: integer }
-                        text: { type: string }
+            code: { type: string }
+            name: { type: string }
+        questionCount: { type: integer }
+        totalPoints: { type: number }
+        questions:
+          type: array
+          description: Sans isCorrect (RG-07)
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              statement: { type: string }
+              points: { type: number }
+              position: { type: integer }
+              choices:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    text: { type: string }
 
     CorrectionLine:
       type: object
       properties:
-        question_id: { type: integer }
+        questionId: { type: integer }
         statement: { type: string }
         points: { type: integer }
-        student_choice_id:
+        student_choiceId:
           type: integer
           nullable: true
           description: null si la question n'a pas été répondue
-        correct_choice_id: { type: integer }
-        is_correct: { type: boolean }
+        correct_choiceId: { type: integer }
+        isCorrect: { type: boolean }

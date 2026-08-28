@@ -61,7 +61,7 @@ CREATE TABLE attempt (
     CONSTRAINT fk_attempt_exam FOREIGN KEY (exam_id)
         REFERENCES exam(id) ON DELETE RESTRICT,
     CONSTRAINT fk_attempt_student FOREIGN KEY (student_id)
-        REFERENCES "user"(id) ON DELETE CASCADE,
+        REFERENCES "user"(id) ON DELETE RESTRICT,
     CONSTRAINT uq_exam_student UNIQUE (exam_id, student_id)
 );
 
@@ -79,9 +79,6 @@ CREATE TABLE answer (
     CONSTRAINT uq_attempt_question UNIQUE (attempt_id, question_id)
 );
 
-INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active)
-VALUES ('admin-001', 'Admin', 'Administrateur', 'admin@example.com', '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG', 'ADMIN', TRUE);
-
 CREATE SEQUENCE student_id_seq START 1;
 CREATE SEQUENCE course_id_seq START 1;
 CREATE SEQUENCE exam_id_seq START 1;
@@ -92,7 +89,7 @@ INSERT INTO course (id, code, name, description) VALUES
 ('CS0002', 'PROG2', 'Object-Oriented Programming', 'OOP concepts using Java'),
 ('CS0003', 'DONNEES1', 'Database Fundamentals', 'Basic database commands using PostgreSQL/SQL'),
 ('CS0004', 'LV1', 'French Language', 'French as a foreign language');
-
+ 
 INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES 
 ('admin-001', 'Admin', 'Administrateur', 'admin@example.com',
  '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG', 'ADMIN', TRUE);
