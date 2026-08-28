@@ -94,6 +94,10 @@ INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active)
 ('admin-001', 'Admin', 'Administrateur', 'admin@example.com',
  '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG', 'ADMIN', TRUE);
  
+INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES 
+('admin-001', 'Admin', 'Administrateur', 'admin@example.com',
+ '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG', 'ADMIN', TRUE);
+ 
 INSERT INTO exam (id, course_id, title, description, start_date, end_date) VALUES
 ('EX0001', 'CS0001', 'PROG1 Midterm - Algorithm Basics', 'Covers variables, complexity and arrays', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
 ('EX0002', 'CS0002', 'PROG2 Midterm - Java OOP', 'Covers inheritance and polymorphism', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
