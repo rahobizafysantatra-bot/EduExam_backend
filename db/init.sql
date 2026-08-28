@@ -89,10 +89,6 @@ INSERT INTO course (id, code, name, description) VALUES
 ('CS0002', 'PROG2', 'Object-Oriented Programming', 'OOP concepts using Java'),
 ('CS0003', 'DONNEES1', 'Database Fundamentals', 'Basic database commands using PostgreSQL/SQL'),
 ('CS0004', 'LV1', 'French Language', 'French as a foreign language');
-
-INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES 
-('admin-001', 'Admin', 'Administrateur', 'admin@example.com',
- '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG', 'ADMIN', TRUE);
  
 INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES 
 ('admin-001', 'Admin', 'Administrateur', 'admin@example.com',
