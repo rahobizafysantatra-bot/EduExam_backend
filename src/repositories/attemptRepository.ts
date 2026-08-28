@@ -3,10 +3,7 @@ import { Attempt, AttemptSummaryDTO, ExamResultsDTO, ExamResultRowDTO } from '..
 import { Answer } from '../models/Answer';
 
 export const findByExamAndStudent = async (examId: string, studentId: string): Promise<Attempt | null> => {
-  const result = await pool.query(
-    'SELECT * FROM attempt WHERE exam_id = $1 AND student_id = $2',
-    [examId, studentId]
-  );
+  const result = await pool.query(`SELECT * FROM attempt WHERE exam_id = $1 AND student_id = $2`, [examId, studentId]);
 
   if (result.rows.length === 0) return null;
 
@@ -23,33 +20,39 @@ export const findByExamAndStudent = async (examId: string, studentId: string): P
 
 export const findAvailableExamsForStudent = async (studentId: string) => {
   const result = await pool.query(
-    `SELECT e.id, e.course_id, e.title, e.description, e.start_date, e.end_date, c.code AS course_code
+    `SELECT e.id, e.title, e.description, e.end_date, c.code AS course_code, c.name AS course_name, COUNT(DISTINCT q.id)::int AS question_count, COALESCE(SUM(q.points), 0) AS total_points
      FROM exam e
      JOIN course c ON c.id = e.course_id
+     LEFT JOIN question q ON q.exam_id = e.id
      WHERE NOW() BETWEEN e.start_date AND e.end_date
-       AND NOT EXISTS (
-         SELECT 1 FROM attempt a WHERE a.exam_id = e.id AND a.student_id = $1
-       )
-     ORDER BY e.start_date`,
+       AND NOT EXISTS (SELECT 1 FROM attempt a WHERE a.exam_id = e.id AND a.student_id = $1)
+     GROUP BY e.id, e.title, e.description, e.end_date, c.code, c.name
+     ORDER BY e.end_date ASC`,
     [studentId]
   );
 
   return result.rows.map((row) => ({
     id: row.id,
-    courseId: row.course_id,
     title: row.title,
+    course: {
+      code: row.course_code,
+      name: row.course_name,
+    },
     description: row.description,
-    startDate: row.start_date,
     endDate: row.end_date,
-    courseCode: row.course_code,
+    questionCount: Number(row.question_count),
+    totalPoints: Number(row.total_points),
   }));
 };
 
 export const findExamWindow = async (examId: string) => {
   const result = await pool.query(
-    `SELECT e.id, e.start_date, e.end_date, e.title, c.code AS course_code
-     FROM exam e JOIN course c ON c.id = e.course_id
-     WHERE e.id = $1`,
+    `SELECT e.id, e.title, e.description, e.start_date, e.end_date, c.code AS course_code, c.name AS course_name, COUNT(DISTINCT q.id)::int AS question_count, COALESCE(SUM(q.points), 0) AS total_points
+     FROM exam e
+     JOIN course c ON c.id = e.course_id
+     LEFT JOIN question q ON q.exam_id = e.id
+     WHERE e.id = $1
+     GROUP BY e.id, e.title, e.description, e.start_date, e.end_date, c.code, c.name`,
     [examId]
   );
 
@@ -59,30 +62,33 @@ export const findExamWindow = async (examId: string) => {
 
   return {
     id: row.id,
+    title: row.title,
+    description: row.description,
     startDate: row.start_date,
     endDate: row.end_date,
-    title: row.title,
-    courseCode: row.course_code,
+    course: {
+      code: row.course_code,
+      name: row.course_name,
+    },
+    questionCount: Number(row.question_count),
+    totalPoints: Number(row.total_points),
   };
 };
 
-export const insertAttemptWithAnswers = async (
-  attempt: Attempt,
-  answers: Answer[]
-): Promise<void> => {
+export const insertAttemptWithAnswers = async (attempt: Attempt, answers: Answer[]): Promise<void> => {
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
     await client.query(
-      'INSERT INTO attempt (id, exam_id, student_id, score) VALUES ($1, $2, $3, $4)',
+      `INSERT INTO attempt (id, exam_id, student_id, score) VALUES ($1, $2, $3, $4)`,
       [attempt.id, attempt.examId, attempt.studentId, attempt.score]
     );
 
     for (const answer of answers) {
       await client.query(
-        'INSERT INTO answer (id, attempt_id, question_id, choice_id) VALUES ($1, $2, $3, $4)',
+        `INSERT INTO answer (id, attempt_id, question_id, choice_id) VALUES ($1, $2, $3, $4)`,
         [answer.id, answer.attemptId, answer.questionId, answer.choiceId]
       );
     }
@@ -97,49 +103,82 @@ export const insertAttemptWithAnswers = async (
 };
 
 export const findResultsForExam = async (examId: string): Promise<ExamResultsDTO> => {
+  const examResult = await pool.query(
+    `SELECT e.id, e.title, COALESCE(SUM(q.points), 0) AS total_points
+     FROM exam e
+     LEFT JOIN question q ON q.exam_id = e.id
+     WHERE e.id = $1
+     GROUP BY e.id, e.title`,
+    [examId]
+  );
+
+  if (examResult.rows.length === 0) {
+    return {
+      exam: { id: examId, title: '' },
+      totalPoints: 0,
+      average: null,
+      attemptCount: 0,
+      results: [],
+    };
+  }
+
+  const examRow = examResult.rows[0];
+
   const result = await pool.query(
-    `SELECT u.id AS student_id, u.first_name, u.last_name, a.score, a.submitted_at
-     FROM "user" u
-     LEFT JOIN attempt a ON a.student_id = u.id AND a.exam_id = $1
-     WHERE u.role = 'STUDENT'
-     ORDER BY u.last_name, u.first_name`,
+    `SELECT u.id AS student_id, u.name, a.score, a.submitted_at
+     FROM attempt a
+     JOIN "user" u ON u.id = a.student_id
+     WHERE a.exam_id = $1 AND u.role = 'STUDENT'
+     ORDER BY a.score DESC, u.name ASC`,
     [examId]
   );
 
   const results: ExamResultRowDTO[] = result.rows.map((row) => ({
     studentId: row.student_id,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    attempted: row.score !== null,
-    score: row.score !== null ? Number(row.score) : null,
+    name: row.name,
+    score: Number(row.score),
     submittedAt: row.submitted_at,
   }));
 
-  const attempted = results.filter((r) => r.attempted);
-
-  const average =
-    attempted.length > 0
-      ? attempted.reduce((sum, r) => sum + (r.score ?? 0), 0) / attempted.length
-      : 0;
+  const attemptCount = results.length;
+  const average = attemptCount === 0 ? null : Math.round((results.reduce((sum, row) => sum + row.score, 0) / attemptCount) * 100) / 100;
 
   return {
-    results,
+    exam: {
+      id: examRow.id,
+      title: examRow.title,
+    },
+    totalPoints: Number(examRow.total_points),
     average,
-    attemptsCount: attempted.length,
+    attemptCount,
+    results,
   };
 };
 
-export const findByStudentId = async (
-  studentId: string
-): Promise<AttemptSummaryDTO[]> => {
+export const findByStudentId = async (studentId: string): Promise<AttemptSummaryDTO[]> => {
   const result = await pool.query(
-    `SELECT a.id, a.exam_id, a.submitted_at, a.score,
-            COALESCE(SUM(q.points), 0) AS max_score,
-            e.title AS exam_title, c.code AS course_code
+    `SELECT a.exam_id, a.submitted_at, a.score, e.title, c.code AS course_code, COALESCE(SUM(q.points), 0) AS total_points,
+       COALESCE(json_agg(
+         json_build_object(
+           'questionId', q.id,
+           'statement', q.statement,
+           'points', q.points,
+           'studentChoiceId', answer.choice_id,
+           'correctChoiceId', correct_choice.id,
+           'isCorrect', answer.choice_id IS NOT NULL AND answer.choice_id = correct_choice.id,
+           'choices', COALESCE((
+             SELECT json_agg(json_build_object('id', choice.id, 'text', choice.text) ORDER BY choice.id)
+             FROM choice
+             WHERE choice.question_id = q.id
+           ), '[]'::json)
+         ) ORDER BY q.position, q.id
+       ) FILTER (WHERE q.id IS NOT NULL), '[]'::json) AS correction
      FROM attempt a
      JOIN exam e ON e.id = a.exam_id
      JOIN course c ON c.id = e.course_id
      LEFT JOIN question q ON q.exam_id = e.id
+     LEFT JOIN answer ON answer.attempt_id = a.id AND answer.question_id = q.id
+     LEFT JOIN choice correct_choice ON correct_choice.question_id = q.id AND correct_choice.is_correct = true
      WHERE a.student_id = $1
      GROUP BY a.id, a.exam_id, a.submitted_at, a.score, e.title, c.code
      ORDER BY a.submitted_at DESC`,
@@ -147,12 +186,12 @@ export const findByStudentId = async (
   );
 
   return result.rows.map((row) => ({
-    id: row.id,
     examId: row.exam_id,
-    submittedAt: row.submitted_at,
-    score: Number(row.score),
-    maxScore: Number(row.max_score),
-    examTitle: row.exam_title,
+    title: row.title,
     courseCode: row.course_code,
+    score: Number(row.score),
+    totalPoints: Number(row.total_points),
+    submittedAt: row.submitted_at,
+    correction: row.correction,
   }));
 };

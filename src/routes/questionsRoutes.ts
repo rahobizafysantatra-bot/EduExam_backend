@@ -5,7 +5,7 @@ import { requireRole } from '../security/requireRole';
 
 const router = Router();
 
-router.put('/:questionId', authMiddleware, requireRole('ADMIN'), QuestionController.update);
-router.delete('/:questionId', authMiddleware, requireRole('ADMIN'), QuestionController.remove);
+router.put('/:id', authMiddleware, requireRole('ADMIN'), QuestionController.update);
+router.delete('/:id', authMiddleware, requireRole('ADMIN'), QuestionController.remove);
 
 export default router;

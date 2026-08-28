@@ -44,7 +44,13 @@ Admin:
 - password: admin1234
 
 Student:
+- email: 
+  - alice.martin@eduexam.local
+  - bob.durand@eduexam.local
+  - chloe.bernard@eduexam.local
+  - david.nguyen@eduexam.local
 - password: password
+
 ## Project structure
 
 ```

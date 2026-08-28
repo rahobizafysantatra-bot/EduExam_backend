@@ -1,12 +1,14 @@
 CREATE TABLE "user" (
     id VARCHAR(255) PRIMARY KEY,
-    first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('ADMIN', 'STUDENT')),
+    role VARCHAR(50) NOT NULL
+        CHECK (role IN ('ADMIN', 'STUDENT')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE
+        NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE course (
@@ -31,9 +33,14 @@ CREATE TABLE question (
     id VARCHAR(255) PRIMARY KEY,
     exam_id VARCHAR(255) NOT NULL,
     statement TEXT NOT NULL,
-    points FLOAT NOT NULL,
-    CONSTRAINT fk_question_exam FOREIGN KEY (exam_id)
-        REFERENCES exam(id) ON DELETE CASCADE
+    points FLOAT NOT NULL
+        CHECK (points >= 1),
+    position INTEGER NOT NULL DEFAULT 1
+        CHECK (position >= 1),
+    CONSTRAINT fk_question_exam
+        FOREIGN KEY (exam_id)
+        REFERENCES exam(id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE choice (
@@ -72,16 +79,12 @@ CREATE TABLE answer (
     CONSTRAINT uq_attempt_question UNIQUE (attempt_id, question_id)
 );
 
-INSERT INTO "user" (id, first_name, last_name, email, password_hash, role, is_active)
-VALUES (
-    'admin-001',
-    'Admin',
-    'Master',
-    'admin@example.com',
-    '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG',
-    'ADMIN',
-    TRUE
-);
+INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES
+('STD25001', 'Alice', 'Alice Martin', 'alice.martin@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
+('STD25002', 'Bob', 'Bob Durand', 'bob.durand@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
+('STD25003', 'Chloe', 'Chloe Bernard', 'chloe.bernard@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
+('STD25004', 'David', 'David Nguyen', 'david.nguyen@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE);
+
 
 CREATE SEQUENCE student_id_seq START 1;
 CREATE SEQUENCE course_id_seq START 1;
@@ -94,34 +97,29 @@ INSERT INTO course (id, code, name, description) VALUES
 ('CS0003', 'DONNEES1', 'Database Fundamentals', 'Basic database commands using PostgreSQL/SQL'),
 ('CS0004', 'LV1', 'French Language', 'French as a foreign language');
 
-INSERT INTO "user" (id, first_name, last_name, email, password_hash, role, is_active) VALUES
-('STD25001', 'Alice', 'Martin', 'alice.martin@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25002', 'Bob', 'Durand', 'bob.durand@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25003', 'Chloe', 'Bernard', 'chloe.bernard@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE),
-('STD25004', 'David', 'Nguyen', 'david.nguyen@eduexam.local', '$2b$10$n/8TnR4f3gE8PTpq34cg0eIVXf9v7trPX0GLTW99Y0eNhvXqpAUbe', 'STUDENT', TRUE);
-
+INSERT INTO "user" (id, first_name, name, email, password_hash, role, is_active) VALUES 
+('admin-001', 'Admin', 'Administrateur', 'admin@example.com',
+ '$2b$10$Lz47G/QyXDPUMyisEIqxF.9hWuLHWtbo8FaLIDEVHH78PNOHjTxeG', 'ADMIN', TRUE);
+ 
 INSERT INTO exam (id, course_id, title, description, start_date, end_date) VALUES
 ('EX0001', 'CS0001', 'PROG1 Midterm - Algorithm Basics', 'Covers variables, complexity and arrays', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
 ('EX0002', 'CS0002', 'PROG2 Midterm - Java OOP', 'Covers inheritance and polymorphism', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
 ('EX0003', 'CS0003', 'DONNEES1 Midterm - SQL Basics', 'Covers SELECT, WHERE and parameterized queries', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days'),
 ('EX0004', 'CS0004', 'LV1 Midterm - French Basics', 'Covers vocabulary and grammar basics', NOW() - INTERVAL '1 day', NOW() + INTERVAL '30 days');
 
-INSERT INTO question (id, exam_id, statement, points) VALUES
-('q-prog1-1', 'EX0001', 'Which JavaScript keyword declares a block-scoped variable?', 2),
-('q-prog1-2', 'EX0001', 'What is the time complexity of a binary search on a sorted array of n elements?', 3),
-('q-prog1-3', 'EX0001', 'Is an array in JavaScript zero-indexed?', 1),
-
-('q-prog2-1', 'EX0002', 'Which keyword is used to inherit a class in Java?', 2),
-('q-prog2-2', 'EX0002', 'Which OOP principle allows a subclass to override a method defined in its superclass?', 3),
-('q-prog2-3', 'EX0002', 'Can a Java class extend more than one class directly?', 1),
-
-('q-donnees1-1', 'EX0003', 'Which SQL command is used to retrieve data from a database?', 2),
-('q-donnees1-2', 'EX0003', 'Which clause is used to filter rows in SQL before grouping?', 3),
-('q-donnees1-3', 'EX0003', 'Does PostgreSQL support parameterized queries with $1, $2 syntax?', 1),
-
-('q-lv1-1', 'EX0004', 'Comment dit-on "hello" en francais ?', 2),
-('q-lv1-2', 'EX0004', 'Quel est le feminin de "acteur" ?', 3),
-('q-lv1-3', 'EX0004', 'Le mot "le" est-il un article defini masculin singulier ?', 1);
+INSERT INTO question (id, exam_id, statement, points, position) VALUES
+('q-prog1-1', 'EX0001', 'Which JavaScript keyword declares a block-scoped variable?', 2, 1),
+('q-prog1-2', 'EX0001', 'What is the time complexity of a binary search on a sorted array of n elements?', 3, 2),
+('q-prog1-3', 'EX0001', 'Is an array in JavaScript zero-indexed?', 1, 3),
+('q-prog2-1', 'EX0002', 'Which keyword is used to inherit a class in Java?', 2, 1),
+('q-prog2-2', 'EX0002', 'Which OOP principle allows a subclass to override a method defined in its superclass?', 3, 2),
+('q-prog2-3', 'EX0002', 'Can a Java class extend more than one class directly?', 1, 3),
+('q-donnees1-1', 'EX0003', 'Which SQL command is used to retrieve data from a database?', 2, 1),
+('q-donnees1-2', 'EX0003', 'Which clause is used to filter rows in SQL before grouping?', 3, 2),
+('q-donnees1-3', 'EX0003', 'Does PostgreSQL support parameterized queries with $1, $2 syntax?', 1, 3),
+('q-lv1-1', 'EX0004', 'Comment dit-on "hello" en francais ?', 2, 1),
+('q-lv1-2', 'EX0004', 'Quel est le feminin de "acteur" ?', 3, 2),
+('q-lv1-3', 'EX0004', 'Le mot "le" est-il un article defini masculin singulier ?', 1, 3);
 
 INSERT INTO choice (id, question_id, text, is_correct) VALUES
 ('c-prog1-1-a', 'q-prog1-1', 'var', FALSE),

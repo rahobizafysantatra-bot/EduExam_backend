@@ -14,7 +14,6 @@ const userController = new UserController(userService);
 router.get('/students', authMiddleware, requireRole('ADMIN'), userController.list);
 router.post('/students', authMiddleware, requireRole('ADMIN'), userController.create);
 router.put('/students/:id', authMiddleware, requireRole('ADMIN'), userController.update);
-router.put('/students/:id/reset-password', authMiddleware, requireRole('ADMIN'), userController.resetPassword);
 router.delete('/students/:id', authMiddleware, requireRole('ADMIN'), userController.deactivate);
 
 export default router;

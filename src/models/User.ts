@@ -2,8 +2,8 @@ export type UserRole = 'ADMIN' | 'STUDENT';
 
 export interface User {
   id: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string | null;
+  name: string;
   email: string;
   passwordHash: string;
   role: UserRole;
@@ -12,14 +12,18 @@ export interface User {
 }
 
 export interface CreateStudentDTO {
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  name: string;
   email: string;
   password: string;
 }
 
-export type UpdateStudentDTO = Partial<Pick<User, 'firstName' | 'lastName' | 'email'>> & {
+export interface UpdateStudentDTO {
+  firstName?: string | null;
+  name: string;
+  email: string;
   password?: string;
-};
+  isActive?: boolean;
+}
 
 export type UserDTO = Omit<User, 'passwordHash' | 'createdAt'>;
