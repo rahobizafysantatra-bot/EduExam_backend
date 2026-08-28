@@ -361,7 +361,7 @@ paths:
                   exam:
                     type: object
                     properties:
-                      id: { type: integer }
+                      id: { type: string }
                       title: { type: string }
                   totalPoints: { type: number, example: 5 }
                   average:
